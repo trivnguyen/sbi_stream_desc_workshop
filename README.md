@@ -1,2 +1,3 @@
-# sbi_stream_desc_workshop
-DESC Workshop SBI for stream hack
+# sbi_stream
+SBI for fitting stream-subhalo interaction
+
