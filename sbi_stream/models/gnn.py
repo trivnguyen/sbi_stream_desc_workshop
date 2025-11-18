@@ -179,7 +179,7 @@ class GNNEmbedding(nn.Module):
         super().__init__()
         self.gnn_args = gnn_args
         self.mlp_args = mlp_args
-        self.gnn = models.GNN(
+        self.gnn = GNN(
             input_size=gnn_args['input_size'],
             hidden_sizes=gnn_args['hidden_sizes'],
             projection_size=gnn_args.get('projection_size', None),

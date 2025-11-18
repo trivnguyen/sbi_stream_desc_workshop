@@ -6,25 +6,29 @@ import torch.nn as nn
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 from torch import Tensor
 
+from sbi_stream.models import utils
+from sbi_stream.models import mlp
+
 
 class Transformer(nn.Module):
     """ Transformer model """
 
     def __init__(
-        self, d_feat_in: int, d_pos_in: int, d_feat: int = 32, d_pos: int = 32, nhead: int = 4,
-        num_encoder_layers: int = 4, dim_feedforward: int = 128, sum_features: bool = False,
+        self, feat_input_size: int, pos_input_size: int, feat_embed_size: int = 32,
+        pos_embed_size: int = 32, nhead: int = 4, num_encoder_layers: int = 4,
+        dim_feedforward: int = 128, sum_features: bool = False,
         use_embedding: bool = True, activation_name: str, activation_args: Optional[Dict] = None,
     ) -> None:
         """
         Parameters
         ----------
-        d_feat_in : int
+        feat_input_size : int
             The dimension of the input features (per token).
-        d_pos_in : int
+        pos_input_size : int
             The dimension of the input positional features.
-        d_feat : int
+        feat_embed_size : int
             The dimension of the projected feature embedding.
-        d_pos : int
+        pos_embed_size : int
             The dimension of the projected positional embedding.
         nhead : int
             The number of heads in the multihead attention modules.
@@ -40,9 +44,9 @@ class Transformer(nn.Module):
             The activation function to use for the embedding layer. Default: None
         """
         super().__init__()
-        self.d_feat = d_feat
-        self.d_pos = d_pos
-        self.d_model = d_feat + d_pos
+        self.feat_embed_size = feat_embed_size
+        self.pos_embed_size = pos_embed_size
+        self.d_model = feat_embed_size + pos_embed_size
         self.nhead = nhead
         self.num_encoder_layers = num_encoder_layers
         self.dim_feedforward = dim_feedforward
@@ -54,13 +58,13 @@ class Transformer(nn.Module):
             batch_first=True)
         self.transformer_encoder = TransformerEncoder(
             encoder_layer, num_encoder_layers)
-        self.feat_embedding_layer = nn.Linear(d_feat_in, d_feat)
-        self.pos_embedding_layer = nn.Linear(d_pos_in, d_pos)
+        self.feat_embedding_layer = nn.Linear(feat_input_size, feat_embed_size)
+        self.pos_embedding_layer = nn.Linear(pos_input_size, pos_embed_size)
 
     def forward(self, x: Tensor, pos: Tensor, padding_mask: Optional[Tensor] = None) -> Tensor:
         """
-        x: (batch, seq, d_feat_in)
-        pos: (batch, seq, d_pos_in)
+        x: (batch, seq, feat_input_size)
+        pos: (batch, seq, pos_input_size)
         padding_mask: (batch, seq) boolean mask where True indicates padding
         """
         x = self.feat_embedding_layer(x)
@@ -103,10 +107,10 @@ class TransformerEmbedding(nn.Module):
         self.transformer_args = transformer_args
         self.mlp_args = mlp_args
         self.transformer = Transformer(
-            d_feat_in=transformer_args['d_feat_in'],
-            d_pos_in=transformer_args['d_pos_in'],
-            d_feat=transformer_args.get('d_feat', 32),
-            d_pos=transformer_args.get('d_pos', 32),
+            feat_input_size=transformer_args['feat_input_size'],
+            pos_input_size=transformer_args['pos_input_size'],
+            feat_embed_size=transformer_args.get('feat_embed_size', 32),
+            pos_embed_size=transformer_args.get('pos_embed_size', 32),
             nhead=transformer_args.get('nhead', 4),
             num_encoder_layers=transformer_args.get('num_encoder_layers', 4),
             dim_feedforward=transformer_args.get('dim_feedforward', 128),
@@ -116,7 +120,7 @@ class TransformerEmbedding(nn.Module):
             activation_args=transformer_args.get('activation_args', None),
         )
         self.mlp = mlp.MLPBatchNorm(
-            input_size=self.gnn.hidden_sizes[-1],
+            input_size=self.transformer.d_model,
             output_size=mlp_args['output_size'],
             hidden_sizes=mlp_args.get('hidden_sizes', []),
             activation_fn=utils.get_activation(
@@ -131,8 +135,8 @@ class TransformerEmbedding(nn.Module):
 
     def forward(self, x, pos, padding_mask=None):
         """
-        x: (batch, seq, d_feat_in)
-        pos: (batch, seq, d_pos_in)
+        x: (batch, seq, feat_input_size)
+        pos: (batch, seq, pos_input_size)
         padding_mask: (batch, seq) boolean mask where True indicates padding
         """
         x = self.transformer(x, pos, padding_mask)
