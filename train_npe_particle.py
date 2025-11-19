@@ -110,8 +110,7 @@ def train(config: ConfigDict):
         pl.callbacks.ModelCheckpoint(
             monitor=None, save_top_k=config.get('save_last_k', 3),
             filename='last-{epoch}-{step}-{train_loss:.4f}-{val_loss:.4f}',
-            save_weights_only=False, every_n_train_steps=1,
-        ),
+            save_weights_only=False, every_n_epochs=1),
         pl.callbacks.LearningRateMonitor("step"),
     ]
     train_logger = pl_loggers.TensorBoardLogger(workdir, version='')

@@ -39,13 +39,13 @@ class NPE(pl.LightningModule):
         # Create the embedding model
         if embedding_type == 'transformer':
             self.embedding_model = TransformerEmbedding(
-                transformer_args=embedding_args['transformer'],
-                mlp_args=embedding_args['mlp']
+                transformer_args=embedding_args['transformer_args'],
+                mlp_args=embedding_args['mlp_args']
             )
         elif embedding_type == 'gnn':
             self.embedding_model = GNNEmbedding(
-                gnn_args=embedding_args['gnn'],
-                mlp_args=embedding_args['mlp']
+                gnn_args=embedding_args['gnn_args'],
+                mlp_args=embedding_args['mlp_args']
             )
         else:
             raise ValueError(f'Unknown embedding type: {embedding_type}')
