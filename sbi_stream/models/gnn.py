@@ -203,8 +203,8 @@ class GNNEmbedding(nn.Module):
             dropout=mlp_args.get('dropout', 0.0)
         )
 
-    def forward(self, x, edge_index, batch, edge_attr, edge_weight):
+    def forward(self, x, edge_index, batch, edge_attr=None, edge_weight=None):
         """ Forward pass through the GNN embedding model. GNN -> MLP """
-        x = self.gnn(x, edge_index, batch=batch, edge_attr=edge_attr, edge_weight=edge_weight)
+        x = self.gnn(x, edge_index, batch, edge_attr=edge_attr, edge_weight=edge_weight)
         x = self.mlp(x)
         return x

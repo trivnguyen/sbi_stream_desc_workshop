@@ -131,8 +131,6 @@ class TransformerEmbedding(nn.Module):
             dropout=mlp_args.get('dropout', 0.0)
         )
 
-
-
     def forward(self, x, pos, padding_mask=None):
         """
         x: (batch, seq, feat_input_size)
