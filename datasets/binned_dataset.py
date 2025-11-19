@@ -23,7 +23,7 @@ def read_raw_binned_datasets(
     num_datasets: int = 1,
     start_dataset: int = 0,
     num_subsamples: int = 1,
-    subsample_factor: int = 1,
+    num_per_subsample: int = None,
     phi1_min: Optional[float] = None,
     phi1_max: Optional[float] = None,
     bounds: dict = None,
@@ -53,8 +53,8 @@ def read_raw_binned_datasets(
         Index to start reading the dataset. Default is 0.
     num_subsamples : int, optional
         Number of subsamples to use. Default is 1.
-    num_per_subsamples : int, optional
-        Number of stars to subsample per stream. Default is None (use all stars).
+    num_per_subsample : int, optional
+        Number of particles per subsample. Default is None (use all particles).
     phi1_min : float, optional
         Minimum phi1 value to filter data.
     phi1_max : float, optional
@@ -148,13 +148,11 @@ def read_raw_binned_datasets(
 
     logging.info('Total number of samples: {}'.format(len(x)))
 
-    if len(x) > 0:
-        x, padding_mask = preprocess_utils.pad_and_create_mask(x)
-        t, _ = preprocess_utils.pad_and_create_mask(t)
-        y = np.stack(y, axis=0)
-        return x, y, t, padding_mask
-    else:
-        return None
+    x, padding_mask = preprocess_utils.pad_and_create_mask(x)
+    t, _ = preprocess_utils.pad_and_create_mask(t)
+    y = np.stack(y, axis=0)
+
+    return x, y, t, padding_mask
 
 
 def read_processed_binned_datasets(
@@ -176,8 +174,8 @@ def read_processed_binned_datasets(
 
     Returns
     -------
-    list
-        [x, y, t, padding_mask] where:
+    tuple
+        (x, y, t, padding_mask) where:
         - x: features array (num_samples, max_len, num_features)
         - y: labels array (num_samples, num_labels)
         - t: time/bin_centers array (num_samples, max_len, 1)
@@ -212,7 +210,7 @@ def read_processed_binned_datasets(
     t = np.concatenate(t)
     padding_mask = np.concatenate(padding_mask)
 
-    return [x, y, t, padding_mask]
+    return x, y, t, padding_mask
 
 
 def prepare_binned_dataloader(
@@ -353,13 +351,19 @@ def prepare_binned_dataloader(
     padding_mask_val = torch.tensor(padding_mask_val, dtype=torch.bool)
 
     # create data loader
-    train_dset = TensorDataset(x_train, y_train, t_train, padding_mask_train)
-    val_dset = TensorDataset(x_val, y_val, t_val, padding_mask_val)
     train_loader = DataLoader(
-        train_dset, batch_size=train_batch_size, shuffle=True,
-        num_workers=num_workers, pin_memory=torch.cuda.is_available())
+        TensorDataset(x_train, y_train, t_train, padding_mask_train),
+        batch_size=train_batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=torch.cuda.is_available()
+    )
     val_loader = DataLoader(
-        val_dset, batch_size=eval_batch_size, shuffle=False,
-        num_workers=num_workers, pin_memory=torch.cuda.is_available())
+        TensorDataset(x_val, y_val, t_val, padding_mask_val),
+        batch_size=eval_batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=torch.cuda.is_available()
+    )
 
     return train_loader, val_loader, norm_dict
