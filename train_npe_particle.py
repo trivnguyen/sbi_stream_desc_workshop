@@ -78,17 +78,15 @@ def train(config: ConfigDict):
 
     # Prepare dataloader with the appropriate norm_dict
     # Use config value if provided, otherwise compute based on num_subsamples
-    subsample_shuffle = config.get('subsample_shuffle', config.data.get('num_subsamples', 1) > 1)
     train_loader, val_loader, norm_dict = datasets.prepare_particle_dataloader(
         dataset,
         train_frac=config.train_frac,
         train_batch_size=config.train_batch_size,
         eval_batch_size=config.eval_batch_size,
         num_workers=config.num_workers,
-        norm_dict=None,
         seed=data_seed,
-        n_subsample=config.n_subsample,
-        subsample_shuffle=subsample_shuffle,
+        num_subsamples=config.data.get('num_subsamples', 1),
+        norm_dict=None,
     )
 
     # Initialize the model
