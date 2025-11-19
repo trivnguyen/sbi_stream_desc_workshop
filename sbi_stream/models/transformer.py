@@ -17,7 +17,7 @@ class Transformer(nn.Module):
         self, feat_input_size: int, pos_input_size: int, feat_embed_size: int = 32,
         pos_embed_size: int = 32, nhead: int = 4, num_encoder_layers: int = 4,
         dim_feedforward: int = 128, sum_features: bool = False,
-        use_embedding: bool = True, activation_name: str, activation_args: Optional[Dict] = None,
+        activation_name: str = None, activation_args: Optional[Dict] = None,
     ) -> None:
         """
         Parameters
@@ -38,8 +38,6 @@ class Transformer(nn.Module):
             Whether to sum the features along the sequence dimension. Default: False
         dim_feedforward : int
             The dimension of the feedforward network model.
-        use_embedding : bool
-            Whether to use embedding layers. Default: True
         activation_fn : callable, optional
             The activation function to use for the embedding layer. Default: None
         """
@@ -50,7 +48,6 @@ class Transformer(nn.Module):
         self.nhead = nhead
         self.num_encoder_layers = num_encoder_layers
         self.dim_feedforward = dim_feedforward
-        self.use_embedding = use_embedding
         self.activation_fn = activation_fn
 
         encoder_layer = TransformerEncoderLayer(
@@ -115,7 +112,6 @@ class TransformerEmbedding(nn.Module):
             num_encoder_layers=transformer_args.get('num_encoder_layers', 4),
             dim_feedforward=transformer_args.get('dim_feedforward', 128),
             sum_features=transformer_args.get('sum_features', False),
-            use_embedding=transformer_args.get('use_embedding', True),
             activation_name=transformer_args.get('activation_name', 'ReLU'),
             activation_args=transformer_args.get('activation_args', None),
         )
