@@ -2,7 +2,6 @@
 import os
 import pickle
 import sys
-sys.path.append('/global/homes/t/tvnguyen/snpe_stream')
 import shutil
 import yaml
 from tqdm import tqdm

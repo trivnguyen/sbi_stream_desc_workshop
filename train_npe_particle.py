@@ -28,10 +28,7 @@ def generate_seeds(base_seed, num_seeds, seed_range=(0, 2**32 - 1)):
 def train(config: ConfigDict):
 
     # set up work directory
-    if not hasattr(config, "name"):
-        name = utils.get_random_name()
-    else:
-        name = config["name"]
+    name = config["name"]
     logging.info("Starting training run {} at {}".format(name, config.workdir))
 
     workdir = os.path.join(config.workdir, name)
@@ -85,7 +82,6 @@ def train(config: ConfigDict):
         num_datasets=config.data.num_datasets,
         start_dataset=config.data.get('start_dataset', 0),
     )
-    # print(data[0].shape, data[1].shape, data[2].shape, data[3].shape)
 
     # Prepare dataloader with the appropriate norm_dict
     train_loader, val_loader, norm_dict = datasets.prepare_dataloader(

@@ -69,7 +69,7 @@ class NPE(pl.LightningModule):
         batch_dict = training_utils.prepare_batch(
             batch, self.model_args['embedding_type'], self.device)
         context = self.forward(batch_dict)
-        log_prob = self.flows(context).log_prob(batch_dict['theta'])
+        log_prob = self.flows(context).log_prob(batch_dict['y'])
         loss = -log_prob.mean()
         self.log(
             'train_loss', loss, on_step=True, on_epoch=True,
@@ -80,7 +80,7 @@ class NPE(pl.LightningModule):
         batch_dict = training_utils.prepare_batch(
             batch, self.model_args['embedding_type'], self.device)
         context = self.forward(batch_dict)
-        log_prob = self.flows(context).log_prob(batch_dict['theta'])
+        log_prob = self.flows(context).log_prob(batch_dict['y'])
         loss = -log_prob.mean()
         self.log(
             'val_loss', loss, on_step=False, on_epoch=True,

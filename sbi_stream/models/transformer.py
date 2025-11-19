@@ -135,7 +135,7 @@ class TransformerEmbedding(nn.Module):
         batch_dict : dict
             A dictionary containing the inputs required for the forward pass:
             - 'x' (torch.Tensor): Input feature tensor, typically shaped (batch_size, seq_len, feature_dim).
-            - 'pos' (torch.Tensor): Positional encodings or position indices; shape must be compatible with the transformer's positional input.
+            - 't' (torch.Tensor): Positional encodings or time indices; shape must be compatible with the transformer's positional input.
             - 'padding_mask' (Optional[torch.Tensor]): Optional boolean or byte mask of shape (batch_size, seq_len) indicating padding positions to be ignored by the transformer. If omitted or None, no padding is applied.
 
         Returns
@@ -144,8 +144,8 @@ class TransformerEmbedding(nn.Module):
             The output embeddings of shape (batch_size, output_size)
         """
         x = batch_dict['x']
-        pos = batch_dict['pos']
+        t = batch_dict['t']
         padding_mask = batch_dict.get('padding_mask', None)
-        x = self.transformer(x, pos, padding_mask)
+        x = self.transformer(x, t, padding_mask)
         x = self.mlp(x)
         return x

@@ -161,7 +161,7 @@ def bin_stream(
 
 
 def bin_stream_spline(
-    phi1: np.ndarray, phi2: np.ndarray, feat: np.ndarray, num_bins=int,
+    phi1: np.ndarray, phi2: np.ndarray, feat: np.ndarray, num_bins: int,
     num_knots: int = None, phi1_min: float = None, phi1_max: float = None,
     phi2_min: float = None, phi2_max: float = None
 ):

@@ -15,7 +15,7 @@ from tqdm import tqdm
 from . import io_utils, preprocess_utils
 
 
-def read_particle_datasets(
+def read_raw_particle_datasets(
     data_dir: Union[str, Path],
     features: List[str],
     labels: List[str],
@@ -173,7 +173,6 @@ def prepare_particle_dataloader(
     seed: int = 42,
     n_subsample: int = 1,
     subsample_shuffle: bool = True,
-    shuffle_train: bool = True,
 ):
     """
     Create PyTorch Geometric dataloaders for training and evaluation of particle-level stream datasets.
@@ -199,8 +198,6 @@ def prepare_particle_dataloader(
         Number of subsamples per stream. Default is 1.
     subsample_shuffle : bool, optional
         Whether to shuffle subsamples together. Default is True.
-    shuffle_train : bool, optional
-        Whether to shuffle training data. Default is True.
 
     Returns
     -------
