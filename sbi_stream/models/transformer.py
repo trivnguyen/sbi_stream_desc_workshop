@@ -67,8 +67,7 @@ class Transformer(nn.Module):
         x = self.feat_embedding_layer(x)
         pos = self.pos_embedding_layer(pos)
         src = torch.cat((x, pos), dim=-1)
-        output = self.transformer_encoder(
-            src, src_key_padding_mask=padding_mask)
+        output = self.transformer_encoder(src, src_key_padding_mask=padding_mask)
 
         # NOTE: dimension only works when batch_first=True
         if padding_mask is None:
@@ -127,12 +126,26 @@ class TransformerEmbedding(nn.Module):
             dropout=mlp_args.get('dropout', 0.0)
         )
 
-    def forward(self, x, pos, padding_mask=None):
+    def forward(self, batch_dict):
         """
-        x: (batch, seq, feat_input_size)
-        pos: (batch, seq, pos_input_size)
-        padding_mask: (batch, seq) boolean mask where True indicates padding
+        Run a forward pass through the model's transformer backbone followed by the MLP head.
+
+        Parameters
+        ----------
+        batch_dict : dict
+            A dictionary containing the inputs required for the forward pass:
+            - 'x' (torch.Tensor): Input feature tensor, typically shaped (batch_size, seq_len, feature_dim).
+            - 'pos' (torch.Tensor): Positional encodings or position indices; shape must be compatible with the transformer's positional input.
+            - 'padding_mask' (Optional[torch.Tensor]): Optional boolean or byte mask of shape (batch_size, seq_len) indicating padding positions to be ignored by the transformer. If omitted or None, no padding is applied.
+
+        Returns
+        -------
+        torch.Tensor
+            The output embeddings of shape (batch_size, output_size)
         """
+        x = batch_dict['x']
+        pos = batch_dict['pos']
+        padding_mask = batch_dict.get('padding_mask', None)
         x = self.transformer(x, pos, padding_mask)
         x = self.mlp(x)
         return x

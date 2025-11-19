@@ -203,8 +203,28 @@ class GNNEmbedding(nn.Module):
             dropout=mlp_args.get('dropout', 0.0)
         )
 
-    def forward(self, x, edge_index, batch, edge_attr=None, edge_weight=None):
-        """ Forward pass through the GNN embedding model. GNN -> MLP """
+    def forward(self, batch_dict):
+        """ Forward pass through the GNN embedding model. GNN -> MLP
+        Parameters
+        ----------
+        batch_dict : dict
+            A dictionary containing the batch data with keys:
+            - 'x': Node features tensor of shape (num_nodes, num_node_features)
+            - 'edge_index': Edge indices tensor of shape (2, num_edges)
+            - 'batch': Batch vector tensor of shape (num_nodes,)
+            - 'edge_attr' (optional): Edge attributes tensor of shape (num_edges, num_edge_features)
+            - 'edge_weight' (optional): Edge weights tensor of shape (num_edges,)
+        Returns
+        -------
+        torch.Tensor
+            The output embeddings of shape (batch_size, output_size)
+        """
+        x = batch_dict['x']
+        edge_index = batch_dict['edge_index']
+        batch = batch_dict['batch']
+        edge_attr = batch_dict.get('edge_attr', None)
+        edge_weight = batch_dict.get('edge_weight', None)
+
         x = self.gnn(x, edge_index, batch, edge_attr=edge_attr, edge_weight=edge_weight)
         x = self.mlp(x)
         return x
