@@ -7,6 +7,20 @@ from ugali.analysis.imf import imfFactory
 from ugali import isochrone
 from pygaia.errors.astrometric import proper_motion_uncertainty
 
+
+def calculate_derived_properties(table):
+    ''' Calculate derived properties that are not stored in the dataset '''
+    table['log_M_sat'] = np.log10(table['M_sat'])
+    table['log_rs_sat'] = np.log10(table['rs_sat'])
+    table['sin_phi'] = np.sin(table['phi'] / 360 * 2 * np.pi)
+    table['cos_phi'] = np.cos(table['phi'] / 360 * 2 * np.pi)
+    table['r_sin_phi'] = table['r'] * table['sin_phi']
+    table['r_cos_phi'] = table['r'] * table['cos_phi']
+    table['vz_abs'] = np.abs(table['vz'])
+    table['vphi_abs'] = np.abs(table['vphi'])
+    table['vtotal'] = np.sqrt(table['vphi']**2 + table['vz']**2)
+    return table
+
 def approximate_arc_length(spline, x_arr):
     y_arr = spline(x_arr)
     p2p = np.sqrt((x_arr[1:] - x_arr[:-1]) ** 2 + (y_arr[1:] - y_arr[:-1]) ** 2)
@@ -103,14 +117,13 @@ def pad_and_create_mask(features, max_len=None):
         padded_features[i, :f.shape[0]] = f
     return padded_features, mask
 
-def subsample_arrays(arrays: list, subsample_factor: int, unpack=False):
+def subsample_arrays(arrays: list, num_subsample: int):
     """ Subsample all arrays in the list. Assuming the arrays have the same length """
     num_sample = len(arrays[0])
-    num_subsample = int(np.ceil(num_sample / subsample_factor))
+    if num_subsample >= num_sample:
+        return arrays
     idx = np.random.choice(num_sample, num_subsample, replace=False)
     arrays = [arr[idx] for arr in arrays]
-    # if unpack:
-        # return (*arrays,)
     return arrays
 
 def bin_stream(
@@ -337,29 +350,17 @@ def simulate_uncertainty(num_samples: int, uncertainty: str = "present"):
     G = compute_G(g, r)
 
     # Compute Gaia DR3 proper motion uncertainties (in microarcsec → convert to mas)
-    if uncertainty in ('present', 'future'):
-        pmra_err, pmdec_err = proper_motion_uncertainty(G, release='dr3')
-        pmra_err /= 1000
-        pmdec_err /= 1000
-        # Future survey: 15% of present Gaia DR3 errors
-        if uncertainty == "future":
-            pmra_err *= 0.15
-            pmdec_err *= 0.15
-    elif uncertainty == "spec-s5":
-        # read the CSV file
-        table = np.genfromtxt('/global/homes/t/tvnguyen/sbi_stream/LSST10_DECAM.csv', delimiter=',')
-        interp = interp1d(table[:, 0], table[:, 1], bounds_error=False, fill_value=(table[0, 1], table[-1, 1]))
-        pmra_err = interp(G)
-        pmdec_err = interp(G)
+    pmra_err, pmdec_err = proper_motion_uncertainty(G, release='dr3')
+    pmra_err /= 1000
+    pmdec_err /= 1000
+    # Future survey: 15% of present Gaia DR3 errors
+    if uncertainty == "future":
+        pmra_err *= 0.15
+        pmdec_err *= 0.15
 
     # Compute RV uncertainties from V-band
-    if uncertainty in ('present', 'future'):
-        vr_err = sigma_vr(V)
-    elif uncertainty == "spec-s5":
-        table = np.genfromtxt(
-            '/global/homes/t/tvnguyen/sbi_stream/via_rverr_fehm2_eep500.csv', delimiter=',').T
-        interp = interp1d(table[:, 0], table[:, 1], bounds_error=False, fill_value=(table[0, 1], table[-1, 1]))
-        vr_err = interp(G)
+    vr_err = sigma_vr(V)
+
     # Return uncertainties
     return pmra_err, pmdec_err, vr_err
 
