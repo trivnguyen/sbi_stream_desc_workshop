@@ -104,9 +104,14 @@ def train(config: ConfigDict):
             monitor=config.monitor, patience=config.patience, mode=config.mode,
             verbose=True),
         pl.callbacks.ModelCheckpoint(
-            monitor=config.monitor, save_top_k=config.save_top_k,
-            filename='{epoch}-{step}-{train_loss:.4f}-{val_loss:.4f}',
+            monitor=config.monitor, save_top_k=config.get('save_top_k', 3),
+            filename='best-{epoch}-{step}-{train_loss:.4f}-{val_loss:.4f}',
             mode=config.mode, save_weights_only=False),
+        pl.callbacks.ModelCheckpoint(
+            monitor=None, save_top_k=config.get('save_last_k', 3),
+            filename='last-{epoch}-{step}-{train_loss:.4f}-{val_loss:.4f}',
+            save_weights_only=False, every_n_train_steps=1,
+        ),
         pl.callbacks.LearningRateMonitor("step"),
     ]
     train_logger = pl_loggers.TensorBoardLogger(workdir, version='')
@@ -117,6 +122,7 @@ def train(config: ConfigDict):
         callbacks=callbacks,
         logger=train_logger,
         enable_progress_bar=config.get("enable_progress_bar", True),
+        gradient_clip_val=config.get("gradient_clip_val", 0.0),
     )
 
     # train the model
