@@ -10,6 +10,7 @@ import torch
 from absl import logging
 from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
+from torch_geometric import transforms as T
 from tqdm import tqdm
 
 from datasets import io_utils, preprocess_utils
@@ -115,6 +116,7 @@ def read_raw_particle_datasets(
                     pos=torch.tensor(pos, dtype=torch.float32),
                     pid=torch.tensor([pid], dtype=torch.int32)
                 )
+                graph_data = T.KNNGraph(k=10, loop=True)(graph_data)
                 graph_list.append(graph_data)
 
     logging.info('Total number of graphs: {}'.format(len(graph_list)))
