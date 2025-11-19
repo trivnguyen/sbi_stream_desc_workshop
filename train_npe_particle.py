@@ -10,9 +10,7 @@ import numpy as np
 import torch
 import pytorch_lightning as pl
 import pytorch_lightning.loggers as pl_loggers
-import matplotlib as mpl
 from absl import flags, logging
-from sbi.utils import BoxUniform
 from ml_collections import ConfigDict, config_flags
 
 import datasets
@@ -28,7 +26,7 @@ def generate_seeds(base_seed, num_seeds, seed_range=(0, 2**32 - 1)):
 def train(config: ConfigDict):
 
     # set up work directory
-    name = config["name"]
+    name = config.get('name', 'default_particle')
     logging.info("Starting training run {} at {}".format(name, config.workdir))
 
     workdir = os.path.join(config.workdir, name)
@@ -42,7 +40,7 @@ def train(config: ConfigDict):
                 workdir, 'lightning_logs/checkpoints', config.checkpoint)
         if not os.path.exists(checkpoint_path):
             raise ValueError(f'Checkpoint {checkpoint_path} does not exist')
-    logging.info(f'Reading checkpoint {checkpoint_path}')
+        logging.info(f'Reading checkpoint {checkpoint_path}')
 
     if os.path.exists(workdir):
         if checkpoint_path is None:
@@ -64,62 +62,43 @@ def train(config: ConfigDict):
     data_seed = generate_seeds(config.seed_data, 10_000)[0]
     training_seed = generate_seeds(config.seed_training, 10_000)[0]
 
-    # Determine norm_dict source
-    if checkpoint_path is not None:
-        model = NPE.load_from_checkpoint(checkpoint_path=checkpoint_path)
-        norm_dict = model.norm_dict  # Use the norm_dict from the checkpointed model
-        print(f'Loading from checkpoint {checkpoint_path}')
-        print('Using norm_dict: ', norm_dict)
-        if config.reset_optimizer:
-            checkpoint_path = None
-    else:
-        model = None
-        norm_dict = None
-
     # read in the dataset and prepare the data loader for training
-    data = datasets.read_processed_datasets(
+    dataset = datasets.read_raw_particle_datasets(
         os.path.join(config.data.root, config.data.name),
-        num_datasets=config.data.num_datasets,
+        features=config.data.features,
+        labels=config.data.labels,
+        num_datasets=config.data.get('num_datasets', 1),
         start_dataset=config.data.get('start_dataset', 0),
+        num_subsamples=config.data.get('num_subsamples', 1),
+        num_per_subsample=config.data.get('num_per_subsample', None),
+        phi1_min=config.data.get('phi1_min', None),
+        phi1_max=config.data.get('phi1_max', None),
+        uncertainty=config.data.get('uncertainty_model', None),
     )
 
     # Prepare dataloader with the appropriate norm_dict
-    train_loader, val_loader, norm_dict = datasets.prepare_dataloader(
-        data,
+    # Use config value if provided, otherwise compute based on num_subsamples
+    subsample_shuffle = config.get('subsample_shuffle', config.data.get('num_subsamples', 1) > 1)
+    train_loader, val_loader, norm_dict = datasets.prepare_particle_dataloader(
+        dataset,
         train_frac=config.train_frac,
         train_batch_size=config.train_batch_size,
         eval_batch_size=config.eval_batch_size,
         num_workers=config.num_workers,
-        norm_dict=norm_dict,
+        norm_dict=None,
         seed=data_seed,
         n_subsample=config.n_subsample,
-        subsample_shuffle=config.subsample_shuffle,
+        subsample_shuffle=subsample_shuffle,
     )
 
-    # If no checkpoint was loaded, initialize a new model with the determined norm_dict
-    if model is None:
-        model = NPE(
-            featurizer_args=config.featurizer,
-            flows_args=config.flows,
-            mlp_args=config.mlp,
-            optimizer_args=config.optimizer,
-            scheduler_args=config.scheduler,
-            norm_dict=norm_dict,
-            num_atoms=0,
-            use_atomic_loss=False,
-        )
-
-    # Set prior
-    prior_min = np.array(config.prior.prior_min)
-    prior_max = np.array(config.prior.prior_max)
-    prior_min_norm = (prior_min - norm_dict['y_loc']) / norm_dict['y_scale']
-    prior_max_norm = (prior_max - norm_dict['y_loc']) / norm_dict['y_scale']
-    prior_min_norm = torch.tensor(prior_min_norm, dtype=torch.float32)
-    prior_max_norm = torch.tensor(prior_max_norm, dtype=torch.float32)
-    prior = BoxUniform(
-        low=prior_min_norm, high=prior_max_norm,
-        device=torch.device('cuda') if torch.cuda.is_available() else 'cpu')
-    model.set_prior(prior)
+    # Initialize the model
+    model = NPE(
+        embedding_args=config.model.embedding,
+        flows_args=config.model.flows,
+        optimizer_args=config.optimizer,
+        scheduler_args=config.scheduler,
+        norm_dict=norm_dict,
+    )
 
     # create the trainer object
     callbacks = [
@@ -140,16 +119,13 @@ def train(config: ConfigDict):
         callbacks=callbacks,
         logger=train_logger,
         enable_progress_bar=config.get("enable_progress_bar", True),
-        devices=1
     )
 
     # train the model
     logging.info("Training model...")
     pl.seed_everything(training_seed)
     trainer.fit(
-        model, train_loader, val_loader,
-        ckpt_path=checkpoint_path
-    )
+        model, train_loader, val_loader, ckpt_path=checkpoint_path)
 
 
 if __name__ == "__main__":

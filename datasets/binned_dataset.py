@@ -224,7 +224,7 @@ def prepare_binned_dataloader(
     eval_batch_size: int = 128,
     num_workers: int = 0,
     seed: int = 42,
-    n_subsample: int = 1,
+    num_subsamples: int = 1,
     subsample_shuffle: bool = True,
 ):
     """
@@ -246,11 +246,8 @@ def prepare_binned_dataloader(
         Number of workers for data loading. Default is 0.
     seed : int, optional
         Random seed for shuffling. Default is 42.
-    n_subsample : int, optional
+    num_subsamples : int, optional
         Number of subsamples per stream. Default is 1.
-    subsample_shuffle : bool, optional
-        Whether to shuffle subsamples together. Default is True.
-
     Returns
     -------
     tuple
@@ -262,16 +259,16 @@ def prepare_binned_dataloader(
     x, y, t, padding_mask = data
     num_total = len(x)
 
-    if subsample_shuffle & (n_subsample > 1):
+    if num_subsamples > 1:
         # special case if subsampling is enabled
         # this is required to prevent data leakage
-        assert num_total % n_subsample == 0, f"Data size {len(x)} must be divisible by n_subsample {n_subsample}"
-        num_total_subsample = num_total // n_subsample
+        assert num_total % num_subsamples == 0, f"Data size {len(x)} must be divisible by num_subsamples {num_subsamples}"
+        num_total_subsample = num_total // num_subsamples
 
-        x = x.reshape(num_total_subsample, n_subsample, x.shape[1], x.shape[2])
-        y = y.reshape(num_total_subsample, n_subsample, y.shape[1])
-        t = t.reshape(num_total_subsample, n_subsample, t.shape[1], t.shape[2])
-        padding_mask = padding_mask.reshape(num_total_subsample, n_subsample, padding_mask.shape[1])
+        x = x.reshape(num_total_subsample, num_subsamples, x.shape[1], x.shape[2])
+        y = y.reshape(num_total_subsample, num_subsamples, y.shape[1])
+        t = t.reshape(num_total_subsample, num_subsamples, t.shape[1], t.shape[2])
+        padding_mask = padding_mask.reshape(num_total_subsample, num_subsamples, padding_mask.shape[1])
 
         shuffle = rng.permutation(num_total_subsample)
         x = x[shuffle]

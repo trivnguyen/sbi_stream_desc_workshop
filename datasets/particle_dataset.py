@@ -173,8 +173,7 @@ def prepare_particle_dataloader(
     eval_batch_size: int = 32,
     num_workers: int = 0,
     seed: int = 42,
-    n_subsample: int = 1,
-    subsample_shuffle: bool = True,
+    num_subsamples: int = 1,
 ):
     """
     Create PyTorch Geometric dataloaders for training and evaluation of particle-level stream datasets.
@@ -196,10 +195,8 @@ def prepare_particle_dataloader(
         Number of workers for data loading. Default is 0.
     seed : int, optional
         Random seed for shuffling. Default is 42.
-    n_subsample : int, optional
+    num_subsamples : int, optional
         Number of subsamples per stream. Default is 1.
-    subsample_shuffle : bool, optional
-        Whether to shuffle subsamples together. Default is True.
 
     Returns
     -------
@@ -210,16 +207,16 @@ def prepare_particle_dataloader(
     num_total = len(data)
 
     # Shuffle and split data accounting for subsamples
-    if subsample_shuffle & (n_subsample > 1):
+    if num_subsamples > 1:
         # Special case if subsampling is enabled
         # This is required to prevent data leakage - keep subsamples from the same stream together
-        assert num_total % n_subsample == 0, \
-            f"Data size {num_total} must be divisible by n_subsample {n_subsample}"
+        assert num_total % num_subsamples == 0, \
+            f"Data size {num_total} must be divisible by num_subsamples {num_subsamples}"
 
-        num_total_subsample = num_total // n_subsample
+        num_total_subsample = num_total // num_subsamples
 
         # Reshape to group subsamples together
-        data_grouped = [data[i:i+n_subsample] for i in range(0, num_total, n_subsample)]
+        data_grouped = [data[i:i+num_subsamples] for i in range(0, num_total, num_subsamples)]
 
         # Shuffle the groups
         shuffle_indices = rng.permutation(num_total_subsample)
