@@ -11,7 +11,7 @@ from absl import logging
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
-from . import io_utils, preprocess_utils
+from datasets import io_utils, preprocess_utils
 
 
 def read_raw_binned_datasets(
@@ -117,20 +117,23 @@ def read_raw_binned_datasets(
             feat = feat[mask]
 
             for _ in range(num_subsamples):
-                # subsample the stream
-                phi1_subsample, phi2_subsample, feat_subsample = preprocess_utils.subsample_arrays(
-                    [phi1, phi2, feat], num_subsample=num_per_subsample)
-                phi1_subsample, phi2_subsample, feat_subsample, _ = preprocess_utils.add_uncertainty(
-                    phi1_subsample, phi2_subsample, feat_subsample, features,
-                    uncertainty=uncertainty)
+                # Subsample particles if specified
+                if num_per_subsample is not None:
+                    phi1, phi2, feat = preprocess_utils.subsample_arrays(
+                        [phi1, phi2, feat], num_per_subsample=num_per_subsample)
+
+                # Add uncertainty if specified
+                phi1, phi2, feat, feat_err = preprocess_utils.add_uncertainty(
+                    phi1, phi2, feat, features, uncertainty_model=uncertainty_model)
+
 
                 # bin the stream
                 if binning_fn == 'bin_stream':
                     bin_centers, feat_mean, feat_stdv, feat_count = preprocess_utils.bin_stream(
-                        phi1_subsample, feat_subsample, **binning_args)
+                        phi1, feat, **binning_args)
                 elif binning_fn == 'bin_stream_spline':
                     bin_centers, feat_mean, feat_stdv, feat_count = preprocess_utils.bin_stream_spline(
-                        phi1_subsample, phi2_subsample, feat_subsample, **binning_args)
+                        phi1, phi2, feat, **binning_args)
 
                 if len(bin_centers) == 0:
                     continue

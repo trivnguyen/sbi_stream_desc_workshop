@@ -8,7 +8,7 @@ from .binned_dataset import (
 
 # Import particle dataset functions
 from .particle_dataset import (
-    read_rawparticle_datasets,
+    read_raw_particle_datasets,
     read_processed_particle_datasets,
     prepare_particle_dataloader
 )

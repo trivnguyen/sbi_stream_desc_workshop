@@ -12,7 +12,7 @@ from torch_geometric.data import Data
 from torch_geometric.loader import DataLoader
 from tqdm import tqdm
 
-from . import io_utils, preprocess_utils
+from datasets import io_utils, preprocess_utils
 
 
 def read_raw_particle_datasets(
@@ -50,7 +50,7 @@ def read_raw_particle_datasets(
         Minimum phi1 value to filter data.
     phi1_max : float, optional
         Maximum phi1 value to filter data.
-    uncertainty : str, optional
+    uncertainty_model : str, optional
         If not None, include uncertainty. Either "present" or "future".
 
     Returns
@@ -98,17 +98,19 @@ def read_raw_particle_datasets(
             feat = feat[mask]
 
             for _ in range(num_subsamples):
-                # subsample the stream
-                phi1_subsample, phi2_subsample, feat_subsample = preprocess_utils.subsample_arrays(
-                    [phi1, phi2, feat], num_per_subsample=num_per_subsample)
-                phi1_subsample, phi2_subsample, feat_subsample, _ = preprocess_utils.add_uncertainty(
-                    phi1_subsample, phi2_subsample, feat_subsample, features,
-                    uncertainty=uncertainty)
+                # Subsample particles if specified
+                if num_per_subsample is not None:
+                    phi1, phi2, feat = preprocess_utils.subsample_arrays(
+                        [phi1, phi2, feat], num_per_subsample=num_per_subsample)
+
+                # Add uncertainty if specified
+                phi1, phi2, feat, feat_err = preprocess_utils.add_uncertainty(
+                    phi1, phi2, feat, features, uncertainty_model=uncertainty_model)
 
                 # Create PyTorch Geometric Data object
-                pos = np.stack([phi1_subsample, phi2_subsample], axis=1)
+                pos = np.stack([phi1, phi2], axis=1)
                 graph_data = Data(
-                    x=torch.tensor(feat_subsample, dtype=torch.float32),
+                    x=torch.tensor(feat, dtype=torch.float32),
                     y=torch.tensor(label, dtype=torch.float32),
                     pos=torch.tensor(pos, dtype=torch.float32),
                     pid=torch.tensor([pid], dtype=torch.int32)

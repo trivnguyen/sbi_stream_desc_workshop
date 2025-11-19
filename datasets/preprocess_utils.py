@@ -282,7 +282,7 @@ def sigma_vr(V):
     d = 24.28729466
     return a + (b / (1 + np.exp(-c * (V - d))))
 
-def simulate_uncertainty(num_samples: int, uncertainty: str = "present"):
+def simulate_uncertainty(num_samples: int, uncertainty_model: str = "present"):
     """
     Simulate a large population of stellar uncertainties of proper motions
     and radial velocities.
@@ -302,13 +302,14 @@ def simulate_uncertainty(num_samples: int, uncertainty: str = "present"):
         Radial velocity uncertainty (km/s).
     """
 
-    if uncertainty not in {"present", "future"}:
-        raise ValueError(f"Invalid uncertainty type: {uncertainty}. Must be 'present' or 'future'")
+    if uncertainty_model not in {"present", "future"}:
+        raise ValueError(
+            f"Invalid uncertainty_model type: {uncertainty_model}. Must be 'present' or 'future'")
 
     # Set magnitude cuts for present/future scenarios
-    if uncertainty == "future":
+    if uncertainty_model == "future":
         mag_r_min, mag_r_max = 14.8, 21.0
-    elif uncertainty == "present":
+    elif uncertainty_model == "present":
         mag_r_min, mag_r_max = 14.8, 19.8
 
     # Choose Chabrier IMF and generate isochrone
@@ -366,7 +367,7 @@ def simulate_uncertainty(num_samples: int, uncertainty: str = "present"):
 
 def add_uncertainty(
     phi1: np.ndarray, phi2: np.ndarray, feat: np.ndarray,
-    features: list, uncertainty: str = "present"
+    features: list, uncertainty_model: str = "present"
 ):
     """ Add uncertainties to the features: distance, radial velocity,
     proper motions in phi1, and proper motions in phi2.
@@ -382,12 +383,12 @@ def add_uncertainty(
     # Compute the uncertainty vector
     num_samples = len(phi1)
 
-    if uncertainty is not None:
+    if uncertainty_model is not None:
         feat_err = {}
 
         # Generate a pool of uncertainties
         pmra_err, pmdec_err, vr_err = simulate_uncertainty(
-            num_samples, uncertainty=uncertainty)
+            num_samples, uncertainty_model=uncertainty_model)
 
         feat_err['pm1'] = np.random.normal(loc=0, scale=pmra_err)
         feat_err['pm2'] = np.random.normal(loc=0, scale=pmdec_err)
