@@ -101,8 +101,8 @@ def read_raw_particle_datasets(
                         [phi1, phi2, feat], num_per_subsample=num_per_subsample)
 
                 # Add uncertainty if specified
-                # phi1, phi2, feat, feat_err = preprocess_utils.add_uncertainty(
-                    # phi1, phi2, feat, features, uncertainty_model=uncertainty_model)
+                phi1, phi2, feat, feat_err = preprocess_utils.add_uncertainty(
+                    phi1, phi2, feat, features, uncertainty_model=uncertainty_model)
 
                 # Create PyTorch Geometric Data object
                 pos = np.stack([phi1, phi2], axis=1)
@@ -160,6 +160,48 @@ def read_processed_particle_datasets(
 
     return graph_list
 
+def read_processed_particle_datasets(
+    data_dir: Union[str, Path],
+    num_datasets: int = 1,
+    start_dataset: int = 0,
+):
+    """
+    Read preprocessed particle-level stream datasets from pickle files as PyTorch Geometric graphs.
+
+    Parameters
+    ----------
+    data_dir : str or Path
+        Path to the directory containing the processed data files.
+    num_datasets : int, optional
+        Number of datasets to read in. Default is 1.
+    start_dataset : int, optional
+        Index to start reading the dataset. Default is 0.
+
+    Returns
+    -------
+    list of Data
+        List of PyTorch Geometric Data objects loaded from pickle files.
+    """
+    graph_list = []
+
+    for i in tqdm(range(start_dataset, start_dataset + num_datasets)):
+        data_path = os.path.join(data_dir, f'data.{i}.pkl')
+        if not os.path.exists(data_path):
+            continue
+
+        with open(data_path, "rb") as f:
+            graphs = pickle.load(f)
+
+        # If the pickle file contains a list of Data objects, extend graph_list
+        # Otherwise, if it's a single Data object, append it
+        if isinstance(graphs, list):
+            graph_list.extend(graphs)
+        else:
+            graph_list.append(graphs)
+
+    logging.info('Total number of graphs loaded: {}'.format(len(graph_list)))
+
+    return graph_list
 
 def prepare_particle_dataloader(
     data: List[Data],
