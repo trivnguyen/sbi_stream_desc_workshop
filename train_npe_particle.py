@@ -73,7 +73,7 @@ def train(config: ConfigDict):
         num_per_subsample=config.data.get('num_per_subsample', None),
         phi1_min=config.data.get('phi1_min', None),
         phi1_max=config.data.get('phi1_max', None),
-        uncertainty=config.data.get('uncertainty_model', None),
+        uncertainty_model=config.data.get('uncertainty_model', None),
     )
 
     # Prepare dataloader with the appropriate norm_dict
@@ -91,8 +91,7 @@ def train(config: ConfigDict):
 
     # Initialize the model
     model = NPE(
-        embedding_args=config.model.embedding,
-        flows_args=config.model.flows,
+        model_args=config.model,
         optimizer_args=config.optimizer,
         scheduler_args=config.scheduler,
         norm_dict=norm_dict,
@@ -108,9 +107,9 @@ def train(config: ConfigDict):
             filename='best-{epoch}-{step}-{train_loss:.4f}-{val_loss:.4f}',
             mode=config.mode, save_weights_only=False),
         pl.callbacks.ModelCheckpoint(
-            monitor=None, save_top_k=config.get('save_last_k', 3),
+            monitor='epoch', save_top_k=config.get('save_last_k', 3),
             filename='last-{epoch}-{step}-{train_loss:.4f}-{val_loss:.4f}',
-            save_weights_only=False, every_n_epochs=1),
+            mode='max', save_weights_only=False),
         pl.callbacks.LearningRateMonitor("step"),
     ]
     train_logger = pl_loggers.TensorBoardLogger(workdir, version='')

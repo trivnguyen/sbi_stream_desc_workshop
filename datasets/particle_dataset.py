@@ -26,7 +26,7 @@ def read_raw_particle_datasets(
     num_per_subsample: int = None,
     phi1_min: Optional[float] = None,
     phi1_max: Optional[float] = None,
-    uncertainty: Optional[str] = None,
+    uncertainty_model: Optional[str] = None,
 ):
     """
     Read and process particle-level stream datasets as PyTorch Geometric graphs.
@@ -52,7 +52,7 @@ def read_raw_particle_datasets(
     phi1_max : float, optional
         Maximum phi1 value to filter data.
     uncertainty_model : str, optional
-        If not None, include uncertainty. Either "present" or "future".
+        If not None, include measurement uncertainty. Either "present" or "future".
 
     Returns
     -------
@@ -85,7 +85,8 @@ def read_raw_particle_datasets(
         # compute some derived labels
         table = preprocess_utils.calculate_derived_properties(table)
 
-        loop = tqdm(range(len(table)), desc='Processing streams')
+        # loop = tqdm(range(len(table)), desc='Processing streams')
+        loop = tqdm(range(100), desc='Processing streams')
 
         for pid in loop:
             phi1 = data['phi1'][pid]
@@ -105,8 +106,8 @@ def read_raw_particle_datasets(
                         [phi1, phi2, feat], num_per_subsample=num_per_subsample)
 
                 # Add uncertainty if specified
-                phi1, phi2, feat, feat_err = preprocess_utils.add_uncertainty(
-                    phi1, phi2, feat, features, uncertainty_model=uncertainty_model)
+                # phi1, phi2, feat, feat_err = preprocess_utils.add_uncertainty(
+                    # phi1, phi2, feat, features, uncertainty_model=uncertainty_model)
 
                 # Create PyTorch Geometric Data object
                 pos = np.stack([phi1, phi2], axis=1)
@@ -116,7 +117,6 @@ def read_raw_particle_datasets(
                     pos=torch.tensor(pos, dtype=torch.float32),
                     pid=torch.tensor([pid], dtype=torch.int32)
                 )
-                graph_data = T.KNNGraph(k=10, loop=True)(graph_data)
                 graph_list.append(graph_data)
 
     logging.info('Total number of graphs: {}'.format(len(graph_list)))

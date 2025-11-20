@@ -49,13 +49,12 @@ class NPE(pl.LightningModule):
             )
         else:
             raise ValueError(f'Unknown embedding type: {embedding_type}')
-        flows_context_features = self.embedding_model.output_size
 
         # Create the normalizing flows
         self.flows = flows_utils.build_flows(
             features=flows_args['features'],
             hidden_features=flows_args['hidden_sizes'],
-            context_features=flows_context_features,
+            context_features=flows_args['context_size'],
             num_transforms=flows_args['num_transforms'],
             num_bins=flows_args['num_bins'],
             activation=flows_args.get('activation', 'relu'),

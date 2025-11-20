@@ -117,12 +117,12 @@ def pad_and_create_mask(features, max_len=None):
         padded_features[i, :f.shape[0]] = f
     return padded_features, mask
 
-def subsample_arrays(arrays: list, num_subsample: int):
+def subsample_arrays(arrays: list, num_per_subsample: int):
     """ Subsample all arrays in the list. Assuming the arrays have the same length """
     num_sample = len(arrays[0])
-    if num_subsample >= num_sample:
+    if num_per_subsample >= num_sample:
         return arrays
-    idx = np.random.choice(num_sample, num_subsample, replace=False)
+    idx = np.random.choice(num_sample, num_per_subsample, replace=False)
     arrays = [arr[idx] for arr in arrays]
     return arrays
 
@@ -354,8 +354,9 @@ def simulate_uncertainty(num_samples: int, uncertainty_model: str = "present"):
     pmra_err, pmdec_err = proper_motion_uncertainty(G, release='dr3')
     pmra_err /= 1000
     pmdec_err /= 1000
+
     # Future survey: 15% of present Gaia DR3 errors
-    if uncertainty == "future":
+    if uncertainty_model == "future":
         pmra_err *= 0.15
         pmdec_err *= 0.15
 

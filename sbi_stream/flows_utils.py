@@ -70,11 +70,12 @@ def build_flows(
         if randperm:
             order = order[torch.randperm(order.size(0))]
         shapes = ([num_bins], [num_bins], [num_bins - 1])
+        activation_fn = get_activation(activation, activation_args)
         transform = zuko.flows.MaskedAutoregressiveTransform(
             features=features, context=context_features,
             univariate=zuko.transforms.MonotonicRQSTransform,
             shapes=shapes, hidden_features=hidden_features, order=order,
-            activation=activation,
+            activation=activation_fn,
         )
         transforms.append(transform)
 

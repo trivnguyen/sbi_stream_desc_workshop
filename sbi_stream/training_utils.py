@@ -1,6 +1,7 @@
 
-import torch
 import math
+import torch
+import torch_geometric.transforms as T
 
 class WarmUpCosineAnnealingLR(torch.optim.lr_scheduler.LambdaLR):
     def __init__(self, optimizer, decay_steps, warmup_steps, eta_min=0, last_epoch=-1, restart=False):
@@ -92,7 +93,11 @@ def prepare_batch_transformer(batch, device='cpu'):
 
 def prepare_batch_gnn(batch, device='cpu'):
     """ Prepare batch for graph model """
-    batch = batch.to(device)
+    transform = T.Compose([
+        T.KNNGraph(k=10, loop=False),
+        T.ToDevice(device)
+    ])
+    batch = transform(batch)
     return {
         'x': batch.x,
         'y': batch.y,

@@ -8,9 +8,9 @@ def get_config():
     config = ConfigDict()
 
     ### Experiment name and directories
-    config.name = 'particle_npe_experiment'
-    config.workdir = '/path/to/workdir'  # TODO: Update with actual work directory path
-    config.overwrite = False
+    config.workdir = '/pscratch/sd/t/tvnguyen/stream_sbi_shared/new_npe/trained-models/'
+    config.name = 'test'
+    config.overwrite = True
     config.checkpoint = None
     config.enable_progress_bar = True
 
@@ -20,23 +20,23 @@ def get_config():
 
     ### DataLoader configuration
     config.train_frac = 0.8
-    config.train_batch_size = 256
-    config.eval_batch_size = 512
+    config.train_batch_size = 32
+    config.eval_batch_size = 32
     config.num_workers = 0
 
     ### Data configuration
-    config.data = data = ConfigDict()
-    data.root = '/path/to/data'
-    data.name = 'particle_dataset'
-    data.features = ['phi1', 'phi2']
-    data.labels = ['label1', 'label2', 'label3']
-    data.num_datasets = 1  # Number of dataset files to load
-    data.start_dataset = 0  # Starting dataset index
-    data.num_subsamples = 1
-    data.num_per_subsample = 100
-    data.phi1_min = -20
-    data.phi1_max = 10
-    data.uncertainty_model = 'present'
+    config.data = ConfigDict()
+    config.data.root = '/pscratch/sd/t/tvnguyen/stream_sbi_shared/npe/datasets/'
+    config.data.name = '6params-uni-ta25'
+    config.data.labels = ['log_M_sat', 'log_rs_sat', 'vz', 'vphi', 'r', 'phi']
+    config.data.features = ['phi1', 'phi2', 'pm1', 'pm2', 'vr', 'dist']
+    config.data.num_datasets = 1
+    config.data.start_dataset = 0
+    config.data.num_subsamples = 1
+    config.data.num_per_subsample = None
+    config.data.phi1_min = -20
+    config.data.phi1_max = 10
+    config.data.uncertainty_model = None
 
     ### Model configuration
     config.model = model = ConfigDict()
@@ -46,9 +46,9 @@ def get_config():
     model.embedding_type = 'gnn'
     model.embedding_args = ConfigDict()
     model.embedding_args.gnn_args = ConfigDict()
-    model.embedding_args.gnn_args.input_size = 1
-    model.embedding_args.gnn_args.hidden_sizes = [128, ] * 3
-    model.embedding_args.gnn_args.projection_size = 64
+    model.embedding_args.gnn_args.input_size = 6
+    model.embedding_args.gnn_args.hidden_sizes = [32, ] * 3
+    model.embedding_args.gnn_args.projection_size = 32
     model.embedding_args.gnn_args.graph_layer = "GATConv"
     model.embedding_args.gnn_args.graph_layer_params = ConfigDict()
     model.embedding_args.gnn_args.graph_layer_params.heads = 2
@@ -61,15 +61,16 @@ def get_config():
     model.embedding_args.mlp_args = ConfigDict()
     model.embedding_args.mlp_args.activation_name = 'gelu'
     model.embedding_args.mlp_args.activation_args = None
-    model.embedding_args.mlp_args.hidden_sizes = [128, ] * 3
-    model.embedding_args.mlp_args.output_size = 64
+    model.embedding_args.mlp_args.hidden_sizes = [32, ] * 3
+    model.embedding_args.mlp_args.output_size = 32
     model.embedding_args.mlp_args.batch_norm = True
     model.embedding_args.mlp_args.dropout = 0.4
 
     # Flow configuration
     model.flows_args = ConfigDict()
     model.flows_args.features = len(config.data.labels)
-    model.flows_args.hidden_sizes = [128, ] * 2
+    model.flows_args.context_size = model.embedding_args.mlp_args.output_size
+    model.flows_args.hidden_sizes = [32, ] * 2
     model.flows_args.num_transforms = 6
     model.flows_args.num_bins = 8
     model.flows_args.activation = 'gelu'
@@ -81,16 +82,17 @@ def get_config():
     config.optimizer.lr = 1e-3
     config.optimizer.weight_decay = 1e-5
     config.scheduler = ConfigDict()
-    config.scheduler.name = 'CosineAnnealingWithWarmup'
+    config.scheduler.name = 'WarmUpCosineAnnealingLR'
     config.scheduler.warmup_steps = 500
-    config.scheduler.max_steps = 10_000
+    config.scheduler.decay_steps = 10_000
     config.scheduler.eta_min = 1e-5
+    config.scheduler.interval = 'step'
 
     ### Training callbacks and configuration
     config.num_steps = 10_000
     config.patience = 20
     config.gradient_clip_val = 1.0
-    config.accelerator = 'gpu'
+    config.accelerator = 'cpu'
     config.monitor = 'val_loss'
     config.mode = 'min'
     config.save_top_k = 3
