@@ -80,19 +80,14 @@ def read_raw_particle_datasets(
 
         # read in the data and label
         table = pd.read_csv(label_fn)
-        data, ptr = io_utils.read_dataset(data_fn, unpack=True)
-
-        # compute some derived labels
         table = preprocess_utils.calculate_derived_properties(table)
+        data, ptr = io_utils.read_dataset(data_fn, unpack=False)
 
-        # loop = tqdm(range(len(table)), desc='Processing streams')
-        loop = tqdm(range(100), desc='Processing streams')
-
-        for pid in loop:
-            phi1 = data['phi1'][pid]
-            phi2 = data['phi2'][pid]
-            feat = np.stack([data[f][pid] for f in features], axis=1)
-            label = table[labels].iloc[pid].values
+        for j in tqdm(range(len(table)), desc='Processing streams'):
+            phi1 = data['phi1'][ptr[j]:ptr[j+1]]
+            phi2 = data['phi2'][ptr[j]:ptr[j+1]]
+            feat = np.stack([data[f][ptr[j]:ptr[j+1]] for f in features], axis=1)
+            label = table[labels].iloc[j].values
 
             mask = (phi1_min <= phi1) & (phi1 < phi1_max)
             phi1 = phi1[mask]
@@ -113,9 +108,8 @@ def read_raw_particle_datasets(
                 pos = np.stack([phi1, phi2], axis=1)
                 graph_data = Data(
                     x=torch.tensor(feat, dtype=torch.float32),
-                    y=torch.tensor(label, dtype=torch.float32),
+                    y=torch.tensor(label, dtype=torch.float32).unsqueeze(0),
                     pos=torch.tensor(pos, dtype=torch.float32),
-                    pid=torch.tensor([pid], dtype=torch.int32)
                 )
                 graph_list.append(graph_data)
 
