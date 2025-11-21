@@ -5,21 +5,19 @@ from ml_collections import ConfigDict
 
 def get_config():
     """Get the default configuration for training NPE on particle data."""
-    config = ConfigDict()
 
     config = ConfigDict()
-    config.root = '/pscratch/sd/t/tvnguyen/stream_sbi_shared/npe/datasets/'
+    config.root = '/mnt/ceph/users/tnguyen/stream/'
     config.name = '6params-uni-ta25'
-    config.root_out = '/pscratch/sd/t/tvnguyen/stream_sbi_shared/new_npe/processed-data/'
-    config.name_out = 'particle-6params-uni-ta25'
+    config.root_out = '/mnt/ceph/users/tnguyen/stream/preprocessed_datasets/particles'
+    config.name_out = 'present-6D'
     config.labels = ['log_M_sat', 'log_rs_sat', 'vz', 'vphi', 'r', 'phi']
     config.features = ['phi1', 'phi2', 'pm1', 'pm2', 'vr', 'dist']
     config.num_datasets = 50
     config.start_dataset = 0
-    config.num_subsamples = 1
+    config.num_subsamples = 10
     config.num_per_subsample = 100
     config.phi1_min = -20
     config.phi1_max = 10
     config.uncertainty_model = 'present'
-
     return config

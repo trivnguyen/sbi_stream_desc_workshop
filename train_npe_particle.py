@@ -63,18 +63,27 @@ def train(config: ConfigDict):
     training_seed = generate_seeds(config.seed_training, 10_000)[0]
 
     # read in the dataset and prepare the data loader for training
-    dataset = datasets.read_raw_particle_datasets(
-        os.path.join(config.data.root, config.data.name),
-        features=config.data.features,
-        labels=config.data.labels,
-        num_datasets=config.data.get('num_datasets', 1),
-        start_dataset=config.data.get('start_dataset', 0),
-        num_subsamples=config.data.get('num_subsamples', 1),
-        num_per_subsample=config.data.get('num_per_subsample', None),
-        phi1_min=config.data.get('phi1_min', None),
-        phi1_max=config.data.get('phi1_max', None),
-        uncertainty_model=config.data.get('uncertainty_model', None),
-    )
+    if config.data.data_type == 'raw':
+        dataset = datasets.read_raw_particle_datasets(
+            os.path.join(config.data.root, config.data.name),
+            features=config.data.features,
+            labels=config.data.labels,
+            num_datasets=config.data.get('num_datasets', 1),
+            start_dataset=config.data.get('start_dataset', 0),
+            num_subsamples=config.data.get('num_subsamples', 1),
+            num_per_subsample=config.data.get('num_per_subsample', None),
+            phi1_min=config.data.get('phi1_min', None),
+            phi1_max=config.data.get('phi1_max', None),
+            uncertainty_model=config.data.get('uncertainty_model', None),
+        )
+    elif config.data.data_type == 'preprocessed':
+        dataset = datasets.read_processed_particle_datasets(
+            os.path.join(config.data.root, config.data.name),
+            num_datasets=config.data.get('num_datasets', 1),
+            start_dataset=config.data.get('start_dataset', 0),
+        )
+    else:
+        raise ValueError(f"Unknown data_type {config.data.data_type}")
 
     # Prepare dataloader with the appropriate norm_dict
     # Use config value if provided, otherwise compute based on num_subsamples

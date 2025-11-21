@@ -75,8 +75,20 @@ def configure_optimizers(parameters, optimizer_args, scheduler_args=None):
             }
         }
 
-def prepare_batch_transformer(batch, device='cpu'):
-    """ Prepare batch for transformer model """
+def prepare_batch_transformer(batch, device='cpu', batch_prep_args=None):
+    """ Prepare batch for transformer model
+
+    Parameters
+    ----------
+    batch : tuple
+        Input batch containing (x, y, t, padding_mask)
+    device : str, default='cpu'
+        Device to use
+    batch_prep_args : dict, optional
+        Additional arguments for batch preparation. Currently unused for transformer.
+    """
+    batch_prep_args = batch_prep_args or {}
+
     x, y, t, padding_mask = batch
     x = x.to(device)
     y = y.to(device)
@@ -91,12 +103,38 @@ def prepare_batch_transformer(batch, device='cpu'):
         'batch_size': x.size(0)
     }
 
-def prepare_batch_gnn(batch, device='cpu'):
-    """ Prepare batch for graph model """
-    transform = T.Compose([
-        T.KNNGraph(k=10, loop=False),
-        T.ToDevice(device)
-    ])
+def prepare_batch_gnn(batch, device='cpu', batch_prep_args=None):
+    """ Prepare batch for graph model
+
+    Parameters
+    ----------
+    batch : torch_geometric.data.Batch
+        Input batch
+    device : str, default='cpu'
+        Device to use
+    batch_prep_args : dict, optional
+        Additional arguments for batch preparation:
+        - k : int, default=10
+            Number of nearest neighbors for KNN graph
+        - loop : bool, default=False
+            Include self-loops in graph
+        - transform : callable, optional
+            Custom graph transformation. If provided, k and loop are ignored.
+    """
+    batch_prep_args = batch_prep_args or {}
+
+    # Allow custom transform or use default KNN graph construction
+    if 'transform' in batch_prep_args:
+        transform = batch_prep_args['transform']
+    else:
+        k = batch_prep_args.get('k', 10)
+        loop = batch_prep_args.get('loop', False)
+        transform = T.Compose([
+            T.ToDevice('cpu'),   # remove if torch_cluster is compiled with GPU support
+            T.KNNGraph(k=k, loop=loop),
+            T.ToDevice(device)
+        ])
+
     batch = transform(batch)
     return {
         'x': batch.x,
@@ -108,18 +146,47 @@ def prepare_batch_gnn(batch, device='cpu'):
         'batch_size': len(batch),
     }
 
-def prepare_batch_cnn(batch, device='cpu'):
-    """ Prepare batch for CNN model """
+def prepare_batch_cnn(batch, device='cpu', batch_prep_args=None):
+    """ Prepare batch for CNN model
+
+    Parameters
+    ----------
+    batch : tuple or torch.Tensor
+        Input batch
+    device : str, default='cpu'
+        Device to use
+    batch_prep_args : dict, optional
+        Additional arguments for batch preparation (e.g., image transforms).
+    """
+    batch_prep_args = batch_prep_args or {}
     raise NotImplementedError("CNN batch preparation not implemented yet.")
 
-def prepare_batch(batch, embedding_type, device='cpu'):
-    """ Prepare batch for training """
+def prepare_batch(batch, embedding_type, device='cpu', batch_prep_args=None):
+    """ Prepare batch for training
+
+    Parameters
+    ----------
+    batch : tuple or torch_geometric.data.Batch
+        Input batch
+    embedding_type : str
+        Type of embedding model ('transformer', 'gnn', or 'cnn')
+    device : str, default='cpu'
+        Device to use
+    batch_prep_args : dict, optional
+        Additional arguments for batch preparation. The available options
+        depend on the embedding_type. See individual prepare_batch_* functions
+        for details.
+    """
+    batch_prep_args = batch_prep_args or {}
 
     if embedding_type == 'transformer':
-        batch_dict = prepare_batch_transformer(batch, device=device)
+        batch_dict = prepare_batch_transformer(
+            batch, device=device, batch_prep_args=batch_prep_args)
     elif embedding_type == 'gnn':
-        batch_dict = prepare_batch_gnn(batch, device=device)
+        batch_dict = prepare_batch_gnn(
+            batch, device=device, batch_prep_args=batch_prep_args)
     elif embedding_type == 'cnn':
-        batch_dict = prepare_batch_cnn(batch, device=device)
+        batch_dict = prepare_batch_cnn(
+            batch, device=device, batch_prep_args=batch_prep_args)
 
     return batch_dict

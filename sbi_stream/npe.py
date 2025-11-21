@@ -13,7 +13,8 @@ class NPE(pl.LightningModule):
         Parameters
         ----------
         model_args : dict
-            Arguments for the model
+            Arguments for the model. Can include 'batch_prep_args' for custom
+            batch preparation settings.
         optimizer_args : dict, optional
             Arguments for the optimizer. Default: None
         scheduler_args : dict, optional
@@ -27,6 +28,7 @@ class NPE(pl.LightningModule):
         self.optimizer_args = optimizer_args or {}
         self.scheduler_args = scheduler_args or {}
         self.norm_dict = norm_dict
+        self.batch_prep_args = model_args.get('batch_prep_args', {})
         self.save_hyperparameters()
         self._setup_model()
 
@@ -66,7 +68,8 @@ class NPE(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         batch_dict = training_utils.prepare_batch(
-            batch, self.model_args['embedding_type'], self.device)
+            batch, self.model_args['embedding_type'], self.device,
+            batch_prep_args=self.batch_prep_args)
         context = self.forward(batch_dict)
         log_prob = self.flows(context).log_prob(batch_dict['y'])
         loss = -log_prob.mean()
@@ -77,7 +80,8 @@ class NPE(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         batch_dict = training_utils.prepare_batch(
-            batch, self.model_args['embedding_type'], self.device)
+            batch, self.model_args['embedding_type'], self.device,
+            batch_prep_args=self.batch_prep_args)
         context = self.forward(batch_dict)
         log_prob = self.flows(context).log_prob(batch_dict['y'])
         loss = -log_prob.mean()
