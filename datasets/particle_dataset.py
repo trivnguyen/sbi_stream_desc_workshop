@@ -97,17 +97,17 @@ def read_raw_particle_datasets(
             for _ in range(num_subsamples):
                 # Subsample particles if specified
                 if num_per_subsample is not None:
-                    phi1, phi2, feat = preprocess_utils.subsample_arrays(
+                    phi1_ppr, phi2_ppr, feat_ppr = preprocess_utils.subsample_arrays(
                         [phi1, phi2, feat], num_per_subsample=num_per_subsample)
 
                 # Add uncertainty if specified
-                phi1, phi2, feat, feat_err = preprocess_utils.add_uncertainty(
-                    phi1, phi2, feat, features, uncertainty_model=uncertainty_model)
+                phi1_ppr, phi2_ppr, feat_ppr, feat_err_ppr = preprocess_utils.add_uncertainty(
+                    phi1_ppr, phi2_ppr, feat_ppr, features, uncertainty_model=uncertainty_model)
 
                 # Create PyTorch Geometric Data object
-                pos = np.stack([phi1, phi2], axis=1)
+                pos = np.stack([phi1_ppr, phi2_ppr], axis=1)
                 graph_data = Data(
-                    x=torch.tensor(feat, dtype=torch.float32),
+                    x=torch.tensor(feat_ppr, dtype=torch.float32),
                     y=torch.tensor(label, dtype=torch.float32).unsqueeze(0),
                     pos=torch.tensor(pos, dtype=torch.float32),
                 )

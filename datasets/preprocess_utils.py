@@ -373,14 +373,6 @@ def add_uncertainty(
     """ Add uncertainties to the features: distance, radial velocity,
     proper motions in phi1, and proper motions in phi2.
     """
-
-    # Define the sample size based on the uncertainty type
-    # sample_size = 96 if uncertainty == "present" else 396 if uncertainty == "future"
-
-    # Downsample the arrays to the sample size
-    # indices = np.random.choice(phi1.shape[0], sample_size, replace=False)
-    # phi1, phi2, feat = phi1[indices], phi2[indices], feat[indices, :]
-
     # Compute the uncertainty vector
     num_samples = len(phi1)
 
