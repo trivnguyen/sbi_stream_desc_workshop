@@ -104,6 +104,7 @@ def train(config: ConfigDict):
         optimizer_args=config.optimizer,
         scheduler_args=config.scheduler,
         norm_dict=norm_dict,
+        freeze_components=config.get('freeze_components')
     )
 
     # create the trainer object
@@ -135,8 +136,13 @@ def train(config: ConfigDict):
     # train the model
     logging.info("Training model...")
     pl.seed_everything(training_seed)
-    trainer.fit(
-        model, train_loader, val_loader, ckpt_path=checkpoint_path)
+    if (checkpoint_path is not None) and (config.get('reset_optimizer', False)):
+        checkpoint = torch.load(checkpoint_path, map_location='cpu')
+        model.load_state_dict(checkpoint['state_dict'])
+        trainer.fit(model, train_loader, val_loader)
+    else:
+        trainer.fit(
+            model, train_loader, val_loader, ckpt_path=checkpoint_path)
 
 
 if __name__ == "__main__":
